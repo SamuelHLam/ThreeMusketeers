@@ -263,7 +263,7 @@ function switchplayers() {
 //this method alerts the players and reloads the page once the game has been won by white.
 function gameOverWht() {
 
-    alert("White wins! The board will reset.");
+    alert("Cardinal Richelieu's army wins! The board will reset.");
 	window.location.replace(window.location.pathname + window.location.search + window.location.hash);
 	
 }
@@ -271,15 +271,16 @@ function gameOverWht() {
 //this method alerts the players and reloads the page once the game has been won by black.
 function gameOverBlk() {
 
-    alert("Black wins! The board will reset.");
+    alert("The Three Musketeers win! The board will reset.");
 	window.location.replace(window.location.pathname + window.location.search + window.location.hash);
 	
 }
 
 //this method alerts the players and reloads the page once the "Concede" button is pressed.
 function gameOver() {
-
-    alert("Game over! The board will reset.");
+    var winner;
+    player === white? winner = "The Three Musketeers win!" : winner = "Cardinal Richelieu's army wins!";
+    alert(winner + " The board will reset.");
 	window.location.replace(window.location.pathname + window.location.search + window.location.hash);
 	
 }
@@ -293,6 +294,7 @@ function gameOver() {
 </div>
 <p class = "instructions">The three black pieces are the Three Musketeers. On their turn, one black piece must capture one orthogonally adjacent white piece, which represents a soldier in Cardinal Richelieu's army. On its turn, the army may move one white piece orthogonally one space.</p>
 <p class = "instructions">The Three Musketeers win if there remain no black pieces with orthogonally adjacent white pieces: in other words, if the Three Musketeers are no longer unable to make a valid move. Cardinal Richelieu's army wins if the Three Musketeers fall on the same row or column. The Three Musketeers cannot win if they end up on the same row or column, even if they meet their win condition.</p>
+<p class = "instructions">The Three Musketeers go first. Good luck!</p>
 
 <div id = "container" class = "container">
 
