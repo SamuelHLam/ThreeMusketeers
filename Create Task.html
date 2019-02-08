@@ -1,0 +1,379 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+<style>
+
+.pieceposition {
+    float: left;
+    width: 100px;
+    height: 100px;
+    padding: 10px;
+    border: 1px solid black;
+}
+
+.container {
+	float: center;
+	width: 610px;
+	max-width: 610 px;
+	height: 610px;
+	margin: 10px;
+	padding: 10px;
+	border: 6px solid black;
+}
+
+h2 {
+	text-align: center;
+}
+
+.instructions {
+	width: 610px;
+	max-width: 610px;
+	margin: 30px;
+}
+
+</style>
+<script>
+
+//defines basic variables that represent players and boundaries of the gameboard, as well as the gameboard itself as an array
+var player = 0;
+var black = 0;
+var white = 1;
+var empty = 2;
+var upLeftBound = 0;
+var downRightBound = 4;
+var playerColor = "blk";
+var blackColor = "blk";
+var whiteColor = "wht";
+var board = [
+  			[1, 1, 1, 1, 0],
+			[1, 1, 1, 1, 1],
+  			[1, 1, 0, 1, 1],
+  			[1, 1, 1, 1, 1],
+  			[0, 1, 1, 1, 1]
+			];
+
+//allowDrop, drag, and drop functions all enable the game pieces to be dragged and dropped where the player chooses.
+function allowDrop(ev) {
+    ev.preventDefault();
+}
+
+function drag(ev) {
+    ev.dataTransfer.setData("text", ev.target.id);
+}
+
+function drop(ev) {
+
+    ev.preventDefault();
+	
+	//the following variables help define the element that was dragged by the player and the elements that the player is dragging onto
+    var data = ev.dataTransfer.getData("text");
+    var objMoved = document.getElementById(data).id;
+	var objMovedParent = document.getElementById(data).parentNode.id;
+	var targetParent = ev.target.parentNode.id;
+	var targetChild = ev.target.id;
+	var removeElement = ev.target.id;
+	
+	if (checkLegality(targetParent, targetChild, objMovedParent, objMoved)) {
+		
+		//if the target space is already occupied by another piece - this only happens on black turn - append the new piece to the target space and remove the preexisting piece
+		if (ev.target.parentNode.className === "pieceposition") {
+			ev.target.parentNode.appendChild(document.getElementById(data));
+			ev.target.parentNode.removeChild(document.getElementById(removeElement));
+	   	}
+		//if the target space is not occupied - white turn - simply append the new piece
+	   	else {
+			ev.target.appendChild(document.getElementById(data));
+	   	}
+		
+		switchplayers();
+		scanForWin();
+		
+	}
+	else {
+	console.log ("Invalid move. Try again.");
+	}
+	
+}
+
+//checkLegality checks if the piece moved matches the player and if the piece is moved one space orthogonally
+function checkLegality(targetParent, targetChild, objMovedParent, objMoved) {
+	
+	//the following variables help identify which entries in the array the target space and the moved piece correspond to
+	var targetParentNumber = targetParent.substring(3, targetParent.length);
+	var targetChildNumber = targetChild.substring(3, targetChild.length);
+	var objMovedParentNumber = objMovedParent.substring(3, objMovedParent.length);
+	var objMovedColor = objMoved.substring(0, 3);
+	
+	//the user must move a piece of their own color
+	if (objMovedColor != playerColor) {
+		return false;
+	}
+	else if (targetParent === "container") {
+		return determineTargetElement(targetChildNumber, objMovedParentNumber);
+	}
+	else {
+		return determineTargetElement(targetParentNumber, objMovedParentNumber);
+	}	
+	
+}
+
+function determineTargetElement(targetNumber, startingNumber) {
+	
+	//the following variables identify the entries in the array that the move deals with
+	var startingRow = Math.floor(startingNumber/5);
+	var startingColumn = startingNumber%5;
+	var targetRow = Math.floor(targetNumber/5);
+	var targetColumn = targetNumber%5;
+	//calls method to check if target square is adjacent to starting position
+	var adjacency = checkAdjacent (startingRow, startingColumn, targetRow, targetColumn);
+	
+	if ( (board[targetRow][targetColumn] === (player+1))&&(adjacency) ) {
+		board[startingRow][startingColumn] = empty;
+		board[targetRow][targetColumn] = player;
+		return true;
+	}
+	else {
+		return false;
+	}
+	
+}
+
+//scans for win when each move is executed
+function scanForWin() {
+
+	for (var i = 0; i < board.length; i++) {
+        if (scanWhtWin(i)) {
+			console.log ("GAME OVER");
+			gameOverWht();
+		}
+	}
+	if (scanBlkWin()&&(player === black)) {
+		console.log ("GAME OVER");
+		gameOverBlk();
+	}
+	
+}
+
+//white wins if there are 3 black pieces in the same row or column. This method scans each row and then each column for 3 black pieces
+function scanWhtWin(line) {
+
+	var blkPieces = 0;
+    for (var i = 0; i < board.length; i++) {
+        if (board[line][i] === 0) {
+        	blkPieces++;  
+        }
+	}
+	if (blkPieces === 3) {
+		return true;
+	}
+	
+	blkPieces = 0;
+	for (var i = 0; i < board.length; i++) {
+        if (board[i][line] === 0) {
+        	blkPieces++;   
+        }
+    }
+	if (blkPieces === 3) {
+		return true;
+	}
+	
+    return false;
+	
+}
+
+/*black wins when it can no longer make a legal move. That is, there are no more white pieces next to any black piece.
+This method scans the adjacent squares to each black piece to determine if they are "trapped"
+*/
+function scanBlkWin() {
+
+	var blkPiecesTrapped = 0;
+	for (var i = 0; i < board.length; i++)	{
+		for (var j = 0; j < board.length; j++) {
+			if (board[i][j] === 0) {
+				if (checkInvalidSpace (i, j)) {
+					blkPiecesTrapped++;
+				}
+			}
+		}
+	}
+	
+	if (blkPiecesTrapped === 3) {
+		return true;
+	}
+	else {
+		return false;
+	}
+	
+}
+
+//This method is called by scanBlkWin to scan each adjacent square to a black piece and determining if it is surrounded by empty spaces or other black pieces.
+function checkInvalidSpace (blkRow, blkColumn) {
+	
+	var noUp = true;
+	var noDown = true;
+	var noLeft = true;
+	var noRight = true;
+	
+	if (!(blkRow === upLeftBound)) {
+		var squareUp = board[blkRow - 1][blkColumn];
+		noUp = ( squareUp === 0 || squareUp === 2 );
+	}
+	if (!(blkRow === downRightBound)) {
+		var squareDown = board[blkRow + 1][blkColumn];
+		noDown = ( squareDown === 0 || squareDown === 2 );
+	}
+	if (!(blkColumn === upLeftBound)) {
+		var squareLeft = board[blkRow][blkColumn - 1];
+		noLeft = ( squareLeft === 0 || squareLeft === 2 );
+	}
+	if (!(blkColumn === downRightBound)) {
+		var squareRight = board[blkRow][blkColumn + 1];
+		noRight = ( squareRight === 0 || squareRight === 2 );
+	}
+	
+	return (noUp && noDown && noLeft && noRight);
+	
+}
+
+//this method is called by the determineTargetElement method to determine if the target space is adjacent to the starting space.
+function checkAdjacent (startingRow, startingColumn, targetRow, targetColumn) {
+
+	var adjacencyUp = ( ((startingRow - 1) === targetRow )&&(startingColumn === targetColumn) );
+	var adjacencyDown = ( ((startingRow + 1) === targetRow )&&(startingColumn === targetColumn) );
+	var adjacencyLeft = ( (startingRow === targetRow )&&((startingColumn - 1) === targetColumn) );
+	var adjacencyRight = ( (startingRow === targetRow )&&((startingColumn + 1) === targetColumn) );
+	return (adjacencyUp || adjacencyDown || adjacencyLeft || adjacencyRight);
+	
+}
+
+//this method simply switches the players so the program runs differently, since each player has different rules for movement
+function switchplayers() {
+
+	if (player === black) {
+		player = white;
+		playerColor = whiteColor;
+	}
+	else {
+		player = black;
+		playerColor = blackColor;
+	}
+	
+}
+
+//this method alerts the players and reloads the page once the game has been won by white.
+function gameOverWht() {
+
+    alert("White wins! The board will reset.");
+	window.location.replace(window.location.pathname + window.location.search + window.location.hash);
+	
+}
+
+//this method alerts the players and reloads the page once the game has been won by black.
+function gameOverBlk() {
+
+    alert("Black wins! The board will reset.");
+	window.location.replace(window.location.pathname + window.location.search + window.location.hash);
+	
+}
+
+//this method alerts the players and reloads the page once the "Concede" button is pressed.
+function gameOver() {
+
+    alert("Game over! The board will reset.");
+	window.location.replace(window.location.pathname + window.location.search + window.location.hash);
+	
+}
+
+</script>
+</head>
+<body>
+
+<div class = "instructions">
+	<h2>The Three Musketeers</h2>
+</div>
+<p class = "instructions">The three black pieces are the Three Musketeers. On their turn, one black piece must capture one orthogonally adjacent white piece, which represents a soldier in Cardinal Richelieu's army. On its turn, the army may move one white piece orthogonally one space.</p>
+<p class = "instructions">The Three Musketeers win if they can no longer make a move without capturing a white piece. Cardinal Richelieu's army wins if the Three Musketeers fall on the same row or column.</p>
+
+<div id = "container" class = "container">
+
+	<div id="div0" class = "pieceposition" ondrop="drop(event)" ondragover="allowDrop(event)">
+		<img src="whitepiece.png" id = "wht1" draggable="true" ondragstart="drag(event)" width="100" height="100">
+	</div>
+	<div id="div1" class = "pieceposition" ondrop="drop(event)" ondragover="allowDrop(event)">
+		<img src="whitepiece.png" id = "wht2" draggable="true" ondragstart="drag(event)" width="100" height="100">
+	</div>
+	<div id="div2" class = "pieceposition" ondrop="drop(event)" ondragover="allowDrop(event)">
+		<img src="whitepiece.png" id = "wht3" draggable="true" ondragstart="drag(event)" width="100" height="100">
+	</div>
+	<div id="div3" class = "pieceposition" ondrop="drop(event)" ondragover="allowDrop(event)">
+		<img src="whitepiece.png" id = "wht4" draggable="true" ondragstart="drag(event)" width="100" height="100">
+	</div>
+	<div id="div4" class = "pieceposition" ondrop="drop(event)" ondragover="allowDrop(event)">
+	  <img src="blackpiece.gif" id = "blk1" draggable="true" ondragstart="drag(event)" width="100" height="100">
+	</div>
+	<div id="div5" class = "pieceposition" ondrop="drop(event)" ondragover="allowDrop(event)">
+		<img src="whitepiece.png" id = "wht5" draggable="true" ondragstart="drag(event)" width="100" height="100">
+	</div>
+	<div id="div6" class = "pieceposition" ondrop="drop(event)" ondragover="allowDrop(event)">
+		<img src="whitepiece.png" id = "wht6" draggable="true" ondragstart="drag(event)" width="100" height="100">
+	</div>
+	<div id="div7" class = "pieceposition" ondrop="drop(event)" ondragover="allowDrop(event)">
+		<img src="whitepiece.png" id = "wht7" draggable="true" ondragstart="drag(event)" width="100" height="100">
+	</div>
+	<div id="div8" class = "pieceposition" ondrop="drop(event)" ondragover="allowDrop(event)">
+		<img src="whitepiece.png" id = "wht8" draggable="true" ondragstart="drag(event)" width="100" height="100">
+	</div>
+	<div id="div9" class = "pieceposition" ondrop="drop(event)" ondragover="allowDrop(event)">
+		<img src="whitepiece.png" id = "wht9" draggable="true" ondragstart="drag(event)" width="100" height="100">
+	</div>
+	<div id="div10" class = "pieceposition" ondrop="drop(event)" ondragover="allowDrop(event)">
+		<img src="whitepiece.png" id = "wht10" draggable="true" ondragstart="drag(event)" width="100" height="100">
+	</div>
+	<div id="div11" class = "pieceposition" ondrop="drop(event)" ondragover="allowDrop(event)">
+		<img src="whitepiece.png" id = "wht11" draggable="true" ondragstart="drag(event)" width="100" height="100">
+	</div>
+	<div id="div12" class = "pieceposition" ondrop="drop(event)" ondragover="allowDrop(event)">
+	  <img src="blackpiece.gif" id = "blk2" draggable="true" ondragstart="drag(event)" width="100" height="100">
+	</div>
+	<div id="div13" class = "pieceposition" ondrop="drop(event)" ondragover="allowDrop(event)">
+		<img src="whitepiece.png" id = "wht12" draggable="true" ondragstart="drag(event)" width="100" height="100">
+	</div>
+	<div id="div14" class = "pieceposition" ondrop="drop(event)" ondragover="allowDrop(event)">
+		<img src="whitepiece.png" id = "wht13" draggable="true" ondragstart="drag(event)" width="100" height="100">
+	</div>
+	<div id="div15" class = "pieceposition" ondrop="drop(event)" ondragover="allowDrop(event)">
+		<img src="whitepiece.png" id = "wht14" draggable="true" ondragstart="drag(event)" width="100" height="100">
+	</div>
+	<div id="div16" class = "pieceposition" ondrop="drop(event)" ondragover="allowDrop(event)">
+		<img src="whitepiece.png" id = "wht16" draggable="true" ondragstart="drag(event)" width="100" height="100">
+	</div>
+	<div id="div17" class = "pieceposition" ondrop="drop(event)" ondragover="allowDrop(event)">
+		<img src="whitepiece.png" id = "wht17" draggable="true" ondragstart="drag(event)" width="100" height="100">
+	</div>
+	<div id="div18" class = "pieceposition" ondrop="drop(event)" ondragover="allowDrop(event)">
+		<img src="whitepiece.png" id = "wht18" draggable="true" ondragstart="drag(event)" width="100" height="100">
+	</div>
+	<div id="div19" class = "pieceposition" ondrop="drop(event)" ondragover="allowDrop(event)">
+		<img src="whitepiece.png" id = "wht19" draggable="true" ondragstart="drag(event)" width="100" height="100">
+	</div>
+	<div id="div20" class = "pieceposition" ondrop="drop(event)" ondragover="allowDrop(event)">
+	  <img src="blackpiece.gif" id = "blk3" draggable="true" ondragstart="drag(event)" width="100" height="100">
+	</div>
+	<div id="div21" class = "pieceposition" ondrop="drop(event)" ondragover="allowDrop(event)">
+		<img src="whitepiece.png" id = "wht20" draggable="true" ondragstart="drag(event)" width="100" height="100">
+	</div>
+	<div id="div22" class = "pieceposition" ondrop="drop(event)" ondragover="allowDrop(event)">
+		<img src="whitepiece.png" id = "wht21" draggable="true" ondragstart="drag(event)" width="100" height="100">
+	</div>
+	<div id="div23" class = "pieceposition" ondrop="drop(event)" ondragover="allowDrop(event)">
+		<img src="whitepiece.png" id = "wht22" draggable="true" ondragstart="drag(event)" width="100" height="100">
+	</div>
+	<div id="div24" class = "pieceposition" ondrop="drop(event)" ondragover="allowDrop(event)">
+		<img src="whitepiece.png" id = "wht23" draggable="true" ondragstart="drag(event)" width="100" height="100">
+	</div>
+
+</div>
+<button id = "reload" onclick = "gameOver()">Concede</button>
+
+</body>
+</html>
