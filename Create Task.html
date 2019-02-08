@@ -292,7 +292,7 @@ function gameOver() {
 	<h2>The Three Musketeers</h2>
 </div>
 <p class = "instructions">The three black pieces are the Three Musketeers. On their turn, one black piece must capture one orthogonally adjacent white piece, which represents a soldier in Cardinal Richelieu's army. On its turn, the army may move one white piece orthogonally one space.</p>
-<p class = "instructions">The Three Musketeers win if they can no longer make a move without capturing a white piece. Cardinal Richelieu's army wins if the Three Musketeers fall on the same row or column.</p>
+<p class = "instructions">The Three Musketeers win if there remain no black pieces with orthogonally adjacent white pieces: in other words, if the Three Musketeers are no longer unable to make a valid move. Cardinal Richelieu's army wins if the Three Musketeers fall on the same row or column. The Three Musketeers cannot win if they end up on the same row or column, even if they meet their win condition.</p>
 
 <div id = "container" class = "container">
 
